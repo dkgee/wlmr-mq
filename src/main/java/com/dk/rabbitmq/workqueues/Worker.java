@@ -27,8 +27,18 @@ public class Worker {
     private static void test() throws IOException, TimeoutException {
         ConnectionFactory factory = new ConnectionFactory();
         factory.setHost("localhost");
-        Connection connection = factory.newConnection();
-        Channel channel = connection.createChannel();
+        final Connection connection = factory.newConnection();
+        final Channel channel = connection.createChannel();
+
+        //是否持久保存队列
+        boolean durable=true;
+        channel.queueDeclare(TASK_QUEUE_NAME, durable, false, false, null);
+
+        System.out.println(" [*] Waiting for messages. To exit press CTRL+C");
+
+        //根据工作节点任务量实际大小分发任务
+        int prefetchcount = 1;
+        channel.basicQos(prefetchcount);
 
         final Consumer consumer = new DefaultConsumer(channel){
             @Override
@@ -46,6 +56,7 @@ public class Worker {
             }
         };
 
+        //标注消息分发后是否删除消息
         boolean autoAck =  true;
         channel.basicConsume(TASK_QUEUE_NAME, autoAck, consumer);
 

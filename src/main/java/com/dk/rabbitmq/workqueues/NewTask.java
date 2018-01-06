@@ -3,6 +3,7 @@ package com.dk.rabbitmq.workqueues;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.MessageProperties;
 
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
@@ -31,8 +32,18 @@ public class NewTask {
         Connection connection = factory.newConnection();
         Channel channel = connection.createChannel();
 
+
+        //是否持久保存队列
+        boolean durable=true;
+        channel.queueDeclare(TASK_QUEUE_NAME, durable, false, false, null);
+
         String message = getMessage(args);
-        channel.basicPublish("", TASK_QUEUE_NAME, null, message.getBytes());
+        //设置队列消息持久化 MessageProperties.PERSISTENT_TEXT_PLAIN
+        channel.basicPublish("", TASK_QUEUE_NAME, MessageProperties.PERSISTENT_TEXT_PLAIN, message.getBytes());
+
+        //根据工作节点任务量实际大小分发任务
+        int prefetchcount = 1;
+        channel.basicQos(prefetchcount);
         System.out.println(" [x] Sent '" + message + "'");
     }
 
